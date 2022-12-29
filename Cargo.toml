@@ -9,9 +9,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 three-d = { path = "three-d" }
+rand = "0.8.5"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 log = "0.4"
+rand = "0.8.5"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
