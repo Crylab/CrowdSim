@@ -1,3 +1,4 @@
+use std::io::Read;
 use three_d::*;
 use rand::Rng;
 
@@ -6,24 +7,47 @@ const H_TO_O_COEFF: f64 = 0.5;
 const H_RAND_COEFF: f64 = 0.1;
 const ATTRAC_COEFF: f64 = 0.1;
 
+//All distances in centimeters
+
 struct Human {
     position: (f64, f64),
     velocity: (f64, f64),
     acceleration: (f64, f64),
+    visual_id: i64,
+    color: Color,
 }
 
 struct Object {
     position: (f64, f64),
+    visual_id: i64,
+    color: Color,
+}
+
+fn obstacle_line(from: (f64, f64), to: (f64, f64)) -> Vec<(f64, f64)> {
+    let mut vec = Vec::new();
+    let step = 40.0;
+    let dist = ((to.0 - from.0).powi(2) + (to.1 - from.1).powi(2)).sqrt();
+    let steps = (dist / step).ceil() as i64;
+    let dx = (to.0 - from.0) / steps as f64;
+    let dy = (to.1 - from.1) / steps as f64;
+    for i in 0..steps {
+        vec.push((from.0 + dx * i as f64, from.1 + dy * i as f64));
+    }
+    vec
 }
 
 impl Object {
     fn set_position(x: f64, y: f64) -> Object {
-        Object { position: (x, y) }
+        Object { position: (x, y),
+                 visual_id: 0,
+                 color: Color::BLUE }
     }
     fn set_position_rand() -> Object {
         let mut rng = rand::thread_rng();
         Object { position: (rand::thread_rng().gen_range(0.0..100.0),
-                            rand::thread_rng().gen_range(0.0..100.0)) }
+                            rand::thread_rng().gen_range(0.0..100.0)),
+                 visual_id: 0,
+                    color: Color::BLUE,}
     }
     fn get_position(&self) -> (f64, f64) {
         self.position
@@ -31,17 +55,21 @@ impl Object {
 }
 
 impl Human {
-    fn set_position_rand() -> Human {
+    fn human() -> Human {
         let mut rng = rand::thread_rng();
         Human { position: (rand::thread_rng().gen_range(0.0..100.0),
                            rand::thread_rng().gen_range(0.0..100.0)),
                 velocity: (0.0, 0.0),
-                acceleration: (0.0, 0.0) }
+                acceleration: (0.0, 0.0),
+                visual_id: 0,
+                color: Color::BLUE,}
     }
     fn set_position(x: f64, y: f64) -> Human {
         Human { position: (x, y),
                 velocity: (0.0, 0.0),
-                acceleration: (0.0, 0.0) }
+                acceleration: (0.0, 0.0),
+                visual_id: 0,
+                color: Color::BLUE,}
     }
     fn get_position(&self) -> (f64, f64) {
         self.position
@@ -74,14 +102,21 @@ impl Human {
     }
 }
 
-struct Scene {
-    humans: Vec<Human>,
-    police: Vec<Human>,
-    obstacles: Vec<Object>,
-    attractors: Vec<Object>,
-}
-
 pub fn main() {
+
+    let humans_num = 10;
+    let obstacles_num = 10;
+    let field_x = 1000.0;
+    let field_y = 1000.0;
+    let scale = 1.0;
+
+    let mut humans = Vec::new();
+    //let mut police = Vec::new();
+    let mut obstacles = Vec::new();
+    //let mut attractors = Vec::new();
+
+    let mut vec = Vec::new();
+
     let window = Window::new(WindowSettings {
         title: "Shapes 2D!".to_string(),
         max_size: Some((1280, 720)),
@@ -90,48 +125,53 @@ pub fn main() {
         .unwrap();
     let context = window.gl();
 
-    let mut rectangle = Gm::new(
-        Rectangle::new(&context, vec2(200.0, 200.0), degrees(45.0), 100.0, 200.0),
-        ColorMaterial {
-            color: Color::RED,
-            ..Default::default()
-        },
-    );
-    let mut circle = Gm::new(
-        Circle::new(&context, vec2(500.0, 500.0), 200.0),
-        ColorMaterial {
-            color: Color::BLUE,
-            ..Default::default()
-        },
-    );
-    let mut line = Gm::new(
-        Line::new(
-            &context,
-            vec2(0.0, 0.0),
-            vec2(
-                window.viewport().width as f32,
-                window.viewport().height as f32,
-            ),
-            5.0,
-        ),
-        ColorMaterial {
-            color: Color::GREEN,
-            ..Default::default()
-        },
-    );
 
+    /////////////////////////////////////////
+    // Human spawn
+    /////////////////////////////////////////
+    for i in 0..humans_num {
+        let x = rand::thread_rng().gen_range(0.0..field_x);
+        let y = rand::thread_rng().gen_range(0.0..field_y);
+        humans.push(Human { position: (x,y),
+                                velocity: (0.0, 0.0),
+                                acceleration: (0.0, 0.0),
+                                visual_id: i,
+                                color: Color::BLACK,});
+        vec.push(Gm::new(
+            Circle::new(&context, vec2(x as f32, y as f32), 25.0),
+            ColorMaterial { color: Color::BLACK, ..Default::default() }, ));
+
+    }
+    /////////////////////////////////////////
+    // Object spawn
+    /////////////////////////////////////////
+    let line1 = obstacle_line((0.0, 0.0), (0.0, field_y));
+    let line2 = obstacle_line((field_x, 0.0), (0.0, 0.0));
+    let line3 = obstacle_line((field_x, field_y), (field_x, 0.0));
+    let line4 = obstacle_line((0.0, field_y), (field_x, field_y));
+    let mut lines = Vec::new();
+    lines.extend(line1);
+    lines.extend(line2);
+    lines.extend(line3);
+    lines.extend(line4);
+
+    for point in lines.iter() {
+        obstacles.push(Object { position: *point,
+                                visual_id: humans_num,
+                                color: Color::BLUE,});
+        vec.push(Gm::new(
+            Circle::new(&context, vec2(point.0 as f32, point.1 as f32), 25.0),
+            ColorMaterial { color: Color::BLUE, ..Default::default() }, ));
+    }
     window.render_loop(move |frame_input: FrameInput| {
         frame_input
             .screen()
             .clear(ClearState::color_and_depth(0.8, 0.8, 0.8, 1.0, 1.0))
             .render(
                 &camera2d(frame_input.viewport),
-                line.into_iter().chain(&rectangle),
+                vec.iter(),
                 &[],
             );
-        frame_input.render(&camera2d(frame_input.viewport),
-                           circle,
-                           &[],);
         FrameOutput::default()
     });
 }
