@@ -4,8 +4,11 @@ use rand::Rng;
 
 const H_TO_H_COEFF: f64 = 0.5;
 const H_TO_O_COEFF: f64 = 0.5;
-const H_RAND_COEFF: f64 = 0.1;
+const H_TO_O_THRESHOLD: f64 = 10.0;
+const H_TO_H_THRESHOLD: f64 = 10.0;
+const H_RAND_COEFF: f64 = 10.0;
 const ATTRAC_COEFF: f64 = 0.1;
+const HUMAN_WEIGHT: f64 = 62.0;
 
 //All distances in centimeters
 
@@ -34,6 +37,10 @@ fn obstacle_line(from: (f64, f64), to: (f64, f64)) -> Vec<(f64, f64)> {
         vec.push((from.0 + dx * i as f64, from.1 + dy * i as f64));
     }
     vec
+}
+
+fn update(humans: &Vec<Human>, mut vec: Vec<Gm<Circle, ColorMaterial>>) {
+
 }
 
 impl Object {
@@ -79,26 +86,45 @@ impl Human {
         let y = self.position.1 - other.1;
         (x.powi(2) + y.powi(2)).sqrt()
     }
-    fn human_to_human(&self, other: (f64, f64)) -> (f64, f64) {
-        let x = (other.0 - self.get_position().0)*H_TO_H_COEFF;
-        let y = (other.1 - self.get_position().1)*H_TO_H_COEFF;
-        (x, y)
+    fn human_to_human(&mut self, other: (f64, f64)) {
+        let dist = self.get_distance(other);
+        if dist < H_TO_H_THRESHOLD {
+            let x = (other.0 - self.get_position().0) * H_TO_H_COEFF;
+            let y = (other.1 - self.get_position().1) * H_TO_H_COEFF;
+            self.acceleration.0 +=x/HUMAN_WEIGHT;
+            self.acceleration.1 +=y/HUMAN_WEIGHT;
+        }
     }
-    fn human_to_object(&self, other: (f64, f64)) -> (f64, f64) {
-        let x = H_TO_O_COEFF/(other.0 - self.get_position().0).powi(2);
-        let y = H_TO_O_COEFF/(other.1 - self.get_position().1).powi(2);
-        (x, y)
+    fn human_to_object(&mut self, other: (f64, f64)) {
+        let dist = self.get_distance(other);
+        if dist < H_TO_O_THRESHOLD {
+            let x = H_TO_O_COEFF / (other.0 - self.get_position().0).powi(2);
+            let y = H_TO_O_COEFF / (other.1 - self.get_position().1).powi(2);
+            self.acceleration.0 +=x/HUMAN_WEIGHT;
+            self.acceleration.1 +=y/HUMAN_WEIGHT;
+        }
     }
-    fn fluctuation(&self) -> (f64, f64) {
+    fn fluctuation(&mut self) {
         let mut rng = rand::thread_rng();
         let x = rng.gen_range(-H_RAND_COEFF..H_RAND_COEFF);
         let y = rng.gen_range(-H_RAND_COEFF..H_RAND_COEFF);
-        (x, y)
+        self.acceleration.0 +=x/HUMAN_WEIGHT;
+        self.acceleration.1 +=y/HUMAN_WEIGHT;
     }
     fn attraction(&self, other: (f64, f64)) -> (f64, f64) {
         let x = (other.0 - self.get_position().0)*ATTRAC_COEFF;
         let y = (other.1 - self.get_position().1)*ATTRAC_COEFF;
         (x, y)
+    }
+    fn reset_acceleration(&mut self) {
+        self.acceleration.0 = 0.0;
+        self.acceleration.1 = 0.0;
+    }
+    fn kinematics(&mut self, dt: f64) {
+        self.velocity.0 += self.acceleration.0*dt;
+        self.velocity.1 += self.acceleration.1*dt;
+        self.position.0 += self.velocity.0*dt;
+        self.position.1 += self.velocity.1*dt;
     }
 }
 
@@ -172,6 +198,13 @@ pub fn main() {
                 vec.iter(),
                 &[],
             );
+        for i in 0..humans_num {
+            humans[i as usize].reset_acceleration();
+            humans[i as usize].fluctuation();
+            humans[i as usize].kinematics(1.0);
+            vec[humans[i as usize].visual_id as usize].set_center(vec2(humans[i as usize].position.0 as f32,
+                                                                humans[i as usize].position.1 as f32));
+        }
         FrameOutput::default()
     });
 }
