@@ -2,13 +2,13 @@ use std::io::Read;
 use three_d::*;
 use rand::Rng;
 
-const H_TO_H_COEFF: f64 = 0.5;
-const H_TO_O_COEFF: f64 = 0.5;
-const H_TO_O_THRESHOLD: f64 = 10.0;
-const H_TO_H_THRESHOLD: f64 = 10.0;
-const H_RAND_COEFF: f64 = 10.0;
+const H_TO_H_COEFF: f64 = 0.4;
+const H_TO_O_COEFF: f64 = 0.4;
+const H_TO_O_THRESHOLD: f64 = 100.0;
+const H_TO_H_THRESHOLD: f64 = 200.0;
+const H_RAND_COEFF: f64 = 0.1;
 const ATTRAC_COEFF: f64 = 0.1;
-const HUMAN_WEIGHT: f64 = 62.0;
+const HUMAN_WEIGHT: f64 = 62.0;//62.0
 
 //All distances in centimeters
 
@@ -16,13 +16,13 @@ struct Human {
     position: (f64, f64),
     velocity: (f64, f64),
     acceleration: (f64, f64),
-    visual_id: i64,
+    visual_id: usize,
     color: Color,
 }
 
 struct Object {
     position: (f64, f64),
-    visual_id: i64,
+    visual_id: usize,
     color: Color,
 }
 
@@ -37,10 +37,6 @@ fn obstacle_line(from: (f64, f64), to: (f64, f64)) -> Vec<(f64, f64)> {
         vec.push((from.0 + dx * i as f64, from.1 + dy * i as f64));
     }
     vec
-}
-
-fn update(humans: &Vec<Human>, mut vec: Vec<Gm<Circle, ColorMaterial>>) {
-
 }
 
 impl Object {
@@ -89,8 +85,8 @@ impl Human {
     fn human_to_human(&mut self, other: (f64, f64)) {
         let dist = self.get_distance(other);
         if dist < H_TO_H_THRESHOLD {
-            let x = (other.0 - self.get_position().0) * H_TO_H_COEFF;
-            let y = (other.1 - self.get_position().1) * H_TO_H_COEFF;
+            let x = ((-other.0 + self.get_position().0)/dist)*(H_TO_H_THRESHOLD-dist)*H_TO_H_COEFF;
+            let y = ((-other.1 + self.get_position().1)/dist)*(H_TO_H_THRESHOLD-dist)*H_TO_H_COEFF;
             self.acceleration.0 +=x/HUMAN_WEIGHT;
             self.acceleration.1 +=y/HUMAN_WEIGHT;
         }
@@ -98,8 +94,8 @@ impl Human {
     fn human_to_object(&mut self, other: (f64, f64)) {
         let dist = self.get_distance(other);
         if dist < H_TO_O_THRESHOLD {
-            let x = H_TO_O_COEFF / (other.0 - self.get_position().0).powi(2);
-            let y = H_TO_O_COEFF / (other.1 - self.get_position().1).powi(2);
+            let x = ((-other.0 + self.get_position().0)/dist)*(H_TO_O_THRESHOLD-dist)*H_TO_O_COEFF;
+            let y = ((-other.1 + self.get_position().1)/dist)*(H_TO_O_THRESHOLD-dist)*H_TO_O_COEFF;
             self.acceleration.0 +=x/HUMAN_WEIGHT;
             self.acceleration.1 +=y/HUMAN_WEIGHT;
         }
@@ -199,11 +195,26 @@ pub fn main() {
                 &[],
             );
         for i in 0..humans_num {
-            humans[i as usize].reset_acceleration();
-            humans[i as usize].fluctuation();
-            humans[i as usize].kinematics(1.0);
-            vec[humans[i as usize].visual_id as usize].set_center(vec2(humans[i as usize].position.0 as f32,
-                                                                humans[i as usize].position.1 as f32));
+
+            humans[i].reset_acceleration();
+            for j in 0..humans_num {
+                if humans[j].visual_id == humans[i].visual_id {continue;}
+                if humans[j].get_distance(humans[i].get_position()) < H_TO_H_THRESHOLD {
+                    let other = humans[j].get_position();
+                    humans[i].human_to_human(other);
+                }
+            }
+            for j in 0..obstacles.len() {
+                if humans[i].get_distance(obstacles[j].get_position()) < H_TO_O_THRESHOLD {
+                    humans[i].human_to_object(obstacles[j].get_position());
+                }
+                humans[i].human_to_object(obstacles[j].get_position());
+            }
+            humans[i].fluctuation();
+            humans[i].kinematics(1.0);
+
+            vec[humans[i].visual_id].set_center(vec2(humans[i].position.0 as f32,
+                                                    humans[i].position.1 as f32));
         }
         FrameOutput::default()
     });
