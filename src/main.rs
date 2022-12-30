@@ -1,14 +1,18 @@
 use std::io::Read;
+//use std::simd::f64x2;
 use three_d::*;
 use rand::Rng;
+use std::time::Instant;
 
-const H_TO_H_COEFF: f64 = 0.4;
-const H_TO_O_COEFF: f64 = 0.4;
-const H_TO_O_THRESHOLD: f64 = 100.0;
-const H_TO_H_THRESHOLD: f64 = 200.0;
-const H_RAND_COEFF: f64 = 0.1;
+const H_TO_H_COEFF: f64 = 5.0;
+const H_TO_O_COEFF: f64 = 5.0;
+const H_TO_O_THRESHOLD: f64 = 50.0;
+const H_TO_H_THRESHOLD: f64 = 50.0;
+const H_RAND_COEFF: f64 = 2.0;
+const H_RAND_PERIOD: usize = 3;
 const ATTRAC_COEFF: f64 = 0.1;
 const HUMAN_WEIGHT: f64 = 62.0;//62.0
+const HUMAN_VISCOS: f64 = 0.05;
 
 //All distances in centimeters
 
@@ -16,6 +20,7 @@ struct Human {
     position: (f64, f64),
     velocity: (f64, f64),
     acceleration: (f64, f64),
+    desire: (f64, f64),
     visual_id: usize,
     color: Color,
 }
@@ -65,14 +70,16 @@ impl Human {
                 velocity: (0.0, 0.0),
                 acceleration: (0.0, 0.0),
                 visual_id: 0,
-                color: Color::BLUE,}
+                color: Color::BLUE,
+                desire: (0.0, 0.0), }
     }
     fn set_position(x: f64, y: f64) -> Human {
         Human { position: (x, y),
                 velocity: (0.0, 0.0),
                 acceleration: (0.0, 0.0),
                 visual_id: 0,
-                color: Color::BLUE,}
+                color: Color::BLUE,
+                desire: (0.0, 0.0), }
     }
     fn get_position(&self) -> (f64, f64) {
         self.position
@@ -100,12 +107,12 @@ impl Human {
             self.acceleration.1 +=y/HUMAN_WEIGHT;
         }
     }
-    fn fluctuation(&mut self) {
+    unsafe fn fluctuation(&mut self) {
         let mut rng = rand::thread_rng();
         let x = rng.gen_range(-H_RAND_COEFF..H_RAND_COEFF);
         let y = rng.gen_range(-H_RAND_COEFF..H_RAND_COEFF);
-        self.acceleration.0 +=x/HUMAN_WEIGHT;
-        self.acceleration.1 +=y/HUMAN_WEIGHT;
+        self.desire.0 +=x/HUMAN_WEIGHT;
+        self.desire.1 +=y/HUMAN_WEIGHT;
     }
     fn attraction(&self, other: (f64, f64)) -> (f64, f64) {
         let x = (other.0 - self.get_position().0)*ATTRAC_COEFF;
@@ -121,12 +128,14 @@ impl Human {
         self.velocity.1 += self.acceleration.1*dt;
         self.position.0 += self.velocity.0*dt;
         self.position.1 += self.velocity.1*dt;
+        self.acceleration.0 = -self.velocity.0*HUMAN_VISCOS+ self.desire.0;
+        self.acceleration.1 = -self.velocity.1*HUMAN_VISCOS+ self.desire.1;
     }
 }
 
 pub fn main() {
 
-    let humans_num = 10;
+    let humans_num = 200;
     let obstacles_num = 10;
     let field_x = 1000.0;
     let field_y = 1000.0;
@@ -140,7 +149,7 @@ pub fn main() {
     let mut vec = Vec::new();
 
     let window = Window::new(WindowSettings {
-        title: "Shapes 2D!".to_string(),
+        title: "Crowd Simulation".to_string(),
         max_size: Some((1280, 720)),
         ..Default::default()
     })
@@ -158,7 +167,8 @@ pub fn main() {
                                 velocity: (0.0, 0.0),
                                 acceleration: (0.0, 0.0),
                                 visual_id: i,
-                                color: Color::BLACK,});
+                                color: Color::BLACK,
+                                desire: (0.0, 0.0), });
         vec.push(Gm::new(
             Circle::new(&context, vec2(x as f32, y as f32), 25.0),
             ColorMaterial { color: Color::BLACK, ..Default::default() }, ));
@@ -176,7 +186,6 @@ pub fn main() {
     lines.extend(line2);
     lines.extend(line3);
     lines.extend(line4);
-
     for point in lines.iter() {
         obstacles.push(Object { position: *point,
                                 visual_id: humans_num,
@@ -185,7 +194,8 @@ pub fn main() {
             Circle::new(&context, vec2(point.0 as f32, point.1 as f32), 25.0),
             ColorMaterial { color: Color::BLUE, ..Default::default() }, ));
     }
-    window.render_loop(move |frame_input: FrameInput| {
+    window.render_loop(move |frame_input: FrameInput| unsafe {
+        let now = Instant::now();
         frame_input
             .screen()
             .clear(ClearState::color_and_depth(0.8, 0.8, 0.8, 1.0, 1.0))
@@ -195,8 +205,6 @@ pub fn main() {
                 &[],
             );
         for i in 0..humans_num {
-
-            humans[i].reset_acceleration();
             for j in 0..humans_num {
                 if humans[j].visual_id == humans[i].visual_id {continue;}
                 if humans[j].get_distance(humans[i].get_position()) < H_TO_H_THRESHOLD {
@@ -210,12 +218,13 @@ pub fn main() {
                 }
                 humans[i].human_to_object(obstacles[j].get_position());
             }
-            humans[i].fluctuation();
-            humans[i].kinematics(1.0);
-
+            humans[i].kinematics(0.2);
             vec[humans[i].visual_id].set_center(vec2(humans[i].position.0 as f32,
                                                     humans[i].position.1 as f32));
         }
+        let elapsed = now.elapsed();
+        let fps = 1.0 / elapsed.as_secs_f64();
+        println!("FPS: {:.2?}", fps);
         FrameOutput::default()
     });
 }
