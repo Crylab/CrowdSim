@@ -1,20 +1,22 @@
 use std::io::Read;
-//use std::simd::f64x2;
 use three_d::*;
 use rand::Rng;
 use std::time::Instant;
 
-const H_TO_H_COEFF: f64 = 5.0;
-const H_TO_O_COEFF: f64 = 5.0;
-const H_TO_O_THRESHOLD: f64 = 50.0;
-const H_TO_H_THRESHOLD: f64 = 50.0;
+const H_TO_H_COEFF: f64 = 2219.0;
+const H_TO_O_COEFF: f64 = 2219.0;
+const H_TO_O_THRESHOLD: f64 = 0.6;
+const H_TO_H_THRESHOLD: f64 = 0.6;
 const H_RAND_COEFF: f64 = 2.0;
 const H_RAND_PERIOD: usize = 3;
 const ATTRAC_COEFF: f64 = 0.1;
 const HUMAN_WEIGHT: f64 = 62.0;//62.0
-const HUMAN_VISCOS: f64 = 0.05;
+const HUMAN_VISCOS: f64 = 100.0;//0.05
 
 //All distances in centimeters
+const CM_TO_M: f64 = 100.0;
+
+static mut VISCOSITY: f64 = HUMAN_VISCOS;
 
 struct Human {
     position: (f64, f64),
@@ -33,7 +35,7 @@ struct Object {
 
 fn obstacle_line(from: (f64, f64), to: (f64, f64)) -> Vec<(f64, f64)> {
     let mut vec = Vec::new();
-    let step = 40.0;
+    let step = 0.4;
     let dist = ((to.0 - from.0).powi(2) + (to.1 - from.1).powi(2)).sqrt();
     let steps = (dist / step).ceil() as i64;
     let dx = (to.0 - from.0) / steps as f64;
@@ -49,6 +51,9 @@ impl Object {
         Object { position: (x, y),
                  visual_id: 0,
                  color: Color::BLUE }
+    }
+    fn change_position(&mut self, x: f64, y: f64) {
+        self.position = (x, y);
     }
     fn set_position_rand() -> Object {
         let mut rng = rand::thread_rng();
@@ -123,22 +128,22 @@ impl Human {
         self.acceleration.0 = 0.0;
         self.acceleration.1 = 0.0;
     }
-    fn kinematics(&mut self, dt: f64) {
+    unsafe fn kinematics(&mut self, dt: f64) {
         self.velocity.0 += self.acceleration.0*dt;
         self.velocity.1 += self.acceleration.1*dt;
         self.position.0 += self.velocity.0*dt;
         self.position.1 += self.velocity.1*dt;
-        self.acceleration.0 = -self.velocity.0*HUMAN_VISCOS+ self.desire.0;
-        self.acceleration.1 = -self.velocity.1*HUMAN_VISCOS+ self.desire.1;
+        self.acceleration.0 = -self.velocity.0*VISCOSITY*dt + self.desire.0;
+        self.acceleration.1 = -self.velocity.1*VISCOSITY*dt + self.desire.1;
     }
 }
 
 pub fn main() {
 
-    let humans_num = 200;
+    let humans_num = 103;
     let obstacles_num = 10;
-    let field_x = 1000.0;
-    let field_y = 1000.0;
+    let field_x = 10.0;
+    let field_y = 3.0;
     let scale = 1.0;
 
     let mut humans = Vec::new();
@@ -170,7 +175,7 @@ pub fn main() {
                                 color: Color::BLACK,
                                 desire: (0.0, 0.0), });
         vec.push(Gm::new(
-            Circle::new(&context, vec2(x as f32, y as f32), 25.0),
+            Circle::new(&context, vec2((x*CM_TO_M) as f32, (y*CM_TO_M) as f32), 25.0),
             ColorMaterial { color: Color::BLACK, ..Default::default() }, ));
 
     }
@@ -182,6 +187,7 @@ pub fn main() {
     let line3 = obstacle_line((field_x, field_y), (field_x, 0.0));
     let line4 = obstacle_line((0.0, field_y), (field_x, field_y));
     let mut lines = Vec::new();
+    let line_len = line1.len();
     lines.extend(line1);
     lines.extend(line2);
     lines.extend(line3);
@@ -191,9 +197,11 @@ pub fn main() {
                                 visual_id: humans_num,
                                 color: Color::BLUE,});
         vec.push(Gm::new(
-            Circle::new(&context, vec2(point.0 as f32, point.1 as f32), 25.0),
+            Circle::new(&context, vec2((point.0 * CM_TO_M) as f32, (point.1 * CM_TO_M) as f32), 25.0),
             ColorMaterial { color: Color::BLUE, ..Default::default() }, ));
     }
+    let mut time = 0.0;
+    let dt = 0.02;
     window.render_loop(move |frame_input: FrameInput| unsafe {
         let now = Instant::now();
         frame_input
@@ -218,13 +226,29 @@ pub fn main() {
                 }
                 humans[i].human_to_object(obstacles[j].get_position());
             }
-            humans[i].kinematics(0.2);
-            vec[humans[i].visual_id].set_center(vec2(humans[i].position.0 as f32,
-                                                    humans[i].position.1 as f32));
+            humans[i].kinematics(dt);
+            vec[humans[i].visual_id].set_center(vec2((humans[i].position.0*CM_TO_M) as f32,
+                                                     (humans[i].position.1*CM_TO_M) as f32));
+
+        }
+        if time > 5.0 && time < 5.2{
+            unsafe{
+                VISCOSITY = 0.0;
+            }
+            let shift = 0.02;
+            for i in 0..line_len {
+                let position = obstacles[i].get_position();
+                obstacles[i].change_position(position.0+shift, position.1);
+                vec[i+humans_num].set_center(vec2((position.0*CM_TO_M) as f32+shift as f32,
+                                                  (position.1*CM_TO_M) as f32));
+            }
+            println!("Position changed");
         }
         let elapsed = now.elapsed();
         let fps = 1.0 / elapsed.as_secs_f64();
-        println!("FPS: {:.2?}", fps);
+        let sim_fps = 1.0 / dt;
+        time += dt;
+        println!("FPS: {:.2?} SimTime: {:.2?}", fps, time);
         FrameOutput::default()
     });
 }
