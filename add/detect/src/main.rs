@@ -200,6 +200,7 @@ pub fn main() {
             Circle::new(&context, vec2((point.0 * CM_TO_M) as f32, (point.1 * CM_TO_M) as f32), 25.0),
             ColorMaterial { color: Color::BLUE, ..Default::default() }, ));
     }
+
     let mut time = 0.0;
     let dt = 0.02;
     window.render_loop(move |frame_input: FrameInput| unsafe {
