@@ -1,4 +1,5 @@
-use std::io::Read;
+use std::fs::File;
+use std::io::{Read, Write};
 use three_d::*;
 use rand::Rng;
 use std::time::Instant;
@@ -9,7 +10,7 @@ const H_TO_A_COEFF: f64 = 100.0;
 const H_TO_O_THRESHOLD: f64 = 0.6;
 const H_TO_H_THRESHOLD: f64 = 0.6;
 const H_TO_A_THRESHOLD: f64 = 6.0;
-const H_RAND_COEFF: f64 = 8.0;
+const H_RAND_COEFF: f64 = 10.0;
 const H_RAND_PERIOD: usize = 3;
 const ATTRAC_COEFF: f64 = 0.1;
 const HUMAN_WEIGHT: f64 = 62.0;//62.0
@@ -24,12 +25,8 @@ struct Human {
     acceleration: (f64, f64),
     desire: (f64, f64),
     id: usize,
-    color: Color,
-    discoverability: bool,
-    geo: bool,
-    relay: usize,
-
-    //telecom_table:Vec<(id, timer, radius, position)>,
+    app: bool,
+    discoverable: bool,
 }
 
 struct Object {
@@ -85,22 +82,18 @@ impl Human {
             velocity: (0.0, 0.0),
             acceleration: (0.0, 0.0),
             id: 0,
-            color: Color::BLUE,
             desire: (0.0, 0.0),
-            discoverability: false,
-            geo: false,
-            relay: 0,}
+            app: false,
+            discoverable: false,}
     }
     fn set_position(x: f64, y: f64) -> Human {
         Human { position: (x, y),
             velocity: (0.0, 0.0),
             acceleration: (0.0, 0.0),
             id: 0,
-            color: Color::BLUE,
             desire: (0.0, 0.0),
-            discoverability: false,
-            geo: false,
-            relay: 0,}
+            app: false,
+            discoverable: false,}
     }
     fn get_position(&self) -> (f64, f64) {
         self.position
@@ -154,7 +147,7 @@ impl Human {
         self.acceleration.0 = 0.0;
         self.acceleration.1 = 0.0;
     }
-    unsafe fn kinematics(&mut self, dt: f64) {
+    fn kinematics(&mut self, dt: f64) {
         self.velocity.0 += self.acceleration.0*dt;
         self.velocity.1 += self.acceleration.1*dt;
         self.position.0 += self.velocity.0*dt;
@@ -165,7 +158,6 @@ impl Human {
 }
 
 pub fn main() {
-
     let humans_num = 103;
     let obstacles_num = 10;
     let field_x = 10.0;
@@ -174,7 +166,6 @@ pub fn main() {
 
     let mut humans = Vec::new();
     let mut obstacles = Vec::new();
-
     let mut vec = Vec::new();
 
     let window = Window::new(WindowSettings {
@@ -196,11 +187,9 @@ pub fn main() {
             velocity: (0.0, 0.0),
             acceleration: (0.0, 0.0),
             id: i,
-            color: Color::BLACK,
             desire: (0.0, 0.0),
-            discoverability: false,
-            geo: false,
-            relay: 0,});
+            app: false,
+            discoverable: false,});
         vec.push(Gm::new(
             Circle::new(&context, vec2((x*CM_TO_M) as f32, (y*CM_TO_M) as f32), 25.0),
             ColorMaterial { color: Color::BLACK, ..Default::default() }, ));
@@ -240,7 +229,8 @@ pub fn main() {
     let mut fluctuation_timer = 0;
     let mut cloud_data: Vec<(f64, f64)> = (0..humans_num).map(|_| (0.0, 0.0)).collect();
     let crowd_threshold = 4;
-
+    let mut estimations = Vec::new();
+    let cutoff = 200.0;
     window.render_loop(move |frame_input: FrameInput| unsafe {
         let now = Instant::now();
         frame_input
@@ -296,6 +286,8 @@ pub fn main() {
         /////////////////////////////////////////
         // Cloud computing
         /////////////////////////////////////////
+        let mut estimation = (0.0, 0.0);
+        let mut n_samples = 0;
         for i in 0..humans_num {
             let mut count = 0;
             for j in 0..humans_num {
@@ -306,9 +298,33 @@ pub fn main() {
             }
             if count > crowd_threshold {
                 vec[i].material.color = Color::RED;
+                estimation.0 += cloud_data[i].0;
+                estimation.1 += cloud_data[i].1;
+                n_samples += 1;
             } else {
                 vec[i].material.color = Color::BLACK;
             }
+        }
+        if n_samples > 0 {
+            estimation.0 /= n_samples as f64;
+            estimation.1 /= n_samples as f64;
+            estimations.push(distance(estimation, attractor));
+        }
+        if time>cutoff {
+            let mut file = File::create("estimations.csv").unwrap();
+            let mut average = 0.0;
+            let mut variation = 0.0;
+            for estimation in estimations.iter() {
+                file.write_all(format!("{}\n", estimation).as_bytes()).unwrap();
+                average += estimation;
+            }
+            average /= estimations.len() as f64;
+            for estimation in estimations.iter() {
+                variation += (estimation - average).powi(2);
+            }
+            variation /= estimations.len() as f64;
+            println!("Average: {} Variation: {} Samples: {}", average, variation, estimations.len());
+            std::process::exit(0);
         }
         /////////////////////////////////////////
         // Performance metrics
