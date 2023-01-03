@@ -35,6 +35,71 @@ struct Object {
     color: Color,
 }
 
+struct Observation {
+    position: (f64, f64),
+    radius: f64,
+    id: usize,
+    expired: bool,
+}
+
+impl Observation {
+    fn new(position: (f64, f64), radius: f64, id: usize) -> Observation {
+        Observation {
+            position,
+            radius,
+            id,
+            expired: false,
+        }
+    }
+    fn empty() -> Observation {
+        Observation {
+            position: (0.0, 0.0),
+            radius: 0.0,
+            id: 0,
+            expired: true,
+        }
+    }
+    fn clone(&self) -> Observation {
+        Observation {
+            position: self.position,
+            radius: self.radius,
+            id: self.id,
+            expired: self.expired,
+        }
+    }
+    fn is_valid(&self) -> bool {
+        !self.expired
+    }
+    fn is_exact(&self) -> bool {
+        return if self.radius < 0.001 { true } else { false };
+    }
+    fn overlays(&self, other: &Observation) -> Observation {
+        if self.id != other.id {
+            println!("Error: Observations do not have the same id");
+            return Observation::new((0.0, 0.0), 0.0, 0);
+        }
+        let (x1, y1) = self.position;
+        let (x2, y2) = other.position;
+        let a = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
+        let p = (a + self.radius + other.radius) / 2.0;
+        let h = (2.0 / a) * ((p * (p - a) * (p - self.radius) * (p - other.radius)).sqrt());
+        if a>(self.radius+other.radius) {
+            return Observation::empty();
+        }
+        if a<=((self.radius-other.radius).abs()) {
+            return if self.radius > other.radius {
+                Observation::new(other.position, other.radius, other.id)
+            } else {
+                Observation::new(self.position, self.radius, self.id)
+            }
+        }
+        let proportion = self.radius/other.radius;
+        let x3 = ((x1*proportion)+x2)/(1.0+proportion);
+        let y3 = ((y1*proportion)+y2)/(1.0+proportion);
+        Observation::new((x3, y3), h, self.id)
+    }
+}
+
 fn obstacle_line(from: (f64, f64), to: (f64, f64)) -> Vec<(f64, f64)> {
     let mut vec = Vec::new();
     let step = 0.2;
@@ -159,6 +224,7 @@ impl Human {
 
 pub fn main() {
     let humans_num = 103;
+    let humans_app = 20;
     let obstacles_num = 10;
     let field_x = 10.0;
     let field_y = 10.0;
@@ -183,13 +249,14 @@ pub fn main() {
     for i in 0..humans_num {
         let x = rand::thread_rng().gen_range(0.0..field_x);
         let y = rand::thread_rng().gen_range(0.0..field_y);
+        let app = if i < humans_app { true } else { false };
         humans.push(Human { position: (x,y),
             velocity: (0.0, 0.0),
             acceleration: (0.0, 0.0),
             id: i,
             desire: (0.0, 0.0),
-            app: false,
-            discoverable: false,});
+            app,
+            discoverable: true,});
         vec.push(Gm::new(
             Circle::new(&context, vec2((x*CM_TO_M) as f32, (y*CM_TO_M) as f32), 25.0),
             ColorMaterial { color: Color::BLACK, ..Default::default() }, ));
@@ -227,7 +294,8 @@ pub fn main() {
     let mut time = 0.0;
     let dt = 0.1;
     let mut fluctuation_timer = 0;
-    let mut cloud_data: Vec<(f64, f64)> = (0..humans_num).map(|_| (0.0, 0.0)).collect();
+    let mut cloud_observations = Vec::new();
+    let discoverable_range = 3.0;
     let crowd_threshold = 4;
     let mut estimations = Vec::new();
     let cutoff = 200.0;
@@ -251,6 +319,9 @@ pub fn main() {
                     let other = humans[j].get_position();
                     humans[i].human_to_human(other);
                 }
+                if humans[i].app && humans[i].get_distance(humans[j].get_position()) < discoverable_range && humans[j].discoverable && !humans[j].app {
+                    cloud_observations.push(Observation::new(humans[j].get_position(), discoverable_range, humans[j].id));
+                }
             }
             for j in 0..obstacles.len() {
                 if humans[i].get_distance(obstacles[j].get_position()) < H_TO_O_THRESHOLD {
@@ -272,8 +343,9 @@ pub fn main() {
             /////////////////////////////////////////
 
 
-
-            cloud_data[i] = humans[i].get_position();
+            if humans[i].app {
+                cloud_observations.push(Observation::new(humans[i].get_position(), 0.0, humans[i].id));
+            }
         }
         /////////////////////////////////////////
         // People's fluctuations
@@ -282,24 +354,51 @@ pub fn main() {
             fluctuation_timer = 0;
         }
         fluctuation_timer += 1;
-
         /////////////////////////////////////////
         // Cloud computing
         /////////////////////////////////////////
+        let mut cloud_data: Vec<Observation> = (0..humans_num).map(|_| Observation::empty()).collect();
+        for i in (0..cloud_observations.len()).rev() {
+            if !cloud_observations[i].is_valid() {continue;}
+            let id = cloud_observations[i].id;
+            if cloud_data[id].is_valid() {
+                if cloud_data[id].is_exact() {
+                    cloud_observations[i].expired = true;
+                } else {
+                    let updated = cloud_data[id].overlays(&cloud_observations[i]);
+                    if updated.is_valid() {
+                        cloud_data[id] = updated.clone();
+                    } else {
+                        cloud_observations[i].expired = true;
+                    }
+                }
+            } else {
+                cloud_data[id] = cloud_observations[i].clone();
+            }
+        }
+        for i in (0..cloud_observations.len()).rev() {
+            if cloud_observations[i].expired {
+                cloud_observations.remove(i);
+            }
+        }
+        let dist = distance(humans[humans_num-1].position, cloud_data[humans_num-1].position);
+        println!("Dist: {}", dist);
         let mut estimation = (0.0, 0.0);
         let mut n_samples = 0;
         for i in 0..humans_num {
+            if !cloud_data[i].is_valid() {continue;}
             let mut count = 0;
             for j in 0..humans_num {
+                if !cloud_data[j].is_valid() {continue;}
                 if j==i { continue; }
-                if distance(cloud_data[i],cloud_data[j]) < H_TO_H_THRESHOLD {
+                if distance(cloud_data[i].position,cloud_data[j].position) < H_TO_H_THRESHOLD {
                     count += 1;
                 }
             }
             if count > crowd_threshold {
                 vec[i].material.color = Color::RED;
-                estimation.0 += cloud_data[i].0;
-                estimation.1 += cloud_data[i].1;
+                estimation.0 += cloud_data[i].position.0;
+                estimation.1 += cloud_data[i].position.1;
                 n_samples += 1;
             } else {
                 vec[i].material.color = Color::BLACK;
