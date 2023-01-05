@@ -6,10 +6,10 @@ use std::time::Instant;
 
 const H_TO_H_COEFF: f64 = 2219.0;
 const H_TO_O_COEFF: f64 = 2219.0;
-const H_TO_A_COEFF: f64 = 100.0;
+const H_TO_A_COEFF: f64 = 0.0;
 const H_TO_O_THRESHOLD: f64 = 0.6;
 const H_TO_H_THRESHOLD: f64 = 0.6;
-const H_TO_A_THRESHOLD: f64 = 6.0;
+const H_TO_A_THRESHOLD: f64 = 10.0;
 const H_RAND_COEFF: f64 = 10.0;
 const H_RAND_PERIOD: usize = 3;
 const ATTRAC_COEFF: f64 = 0.1;
@@ -27,12 +27,12 @@ struct Human {
     id: usize,
     app: bool,
     discoverable: bool,
+    observ: Observation,
 }
 
 struct Object {
     position: (f64, f64),
     id: usize,
-    color: Color,
 }
 
 struct Observation {
@@ -67,6 +67,7 @@ impl Observation {
             expired: self.expired,
         }
     }
+
     fn is_valid(&self) -> bool {
         !self.expired
     }
@@ -94,8 +95,8 @@ impl Observation {
             }
         }
         let proportion = self.radius/other.radius;
-        let x3 = ((x1*proportion)+x2)/(1.0+proportion);
-        let y3 = ((y1*proportion)+y2)/(1.0+proportion);
+        let x3 = ((x2*proportion)+x1)/(1.0+proportion);
+        let y3 = ((y2*proportion)+y1)/(1.0+proportion);
         Observation::new((x3, y3), h, self.id)
     }
 }
@@ -120,19 +121,10 @@ fn distance(a: (f64, f64), b: (f64, f64)) -> f64 {
 impl Object {
     fn set_position(x: f64, y: f64) -> Object {
         Object { position: (x, y),
-            id: 0,
-            color: Color::BLUE }
+            id: 0,}
     }
     fn change_position(&mut self, x: f64, y: f64) {
         self.position = (x, y);
-    }
-    fn set_position_rand() -> Object {
-        let mut rng = rand::thread_rng();
-        Object { position: (rand::thread_rng().gen_range(0.0..100.0),
-                            rand::thread_rng().gen_range(0.0..100.0)),
-            id: 0,
-            color: Color::BLUE,
-        }
     }
     fn get_position(&self) -> (f64, f64) {
         self.position
@@ -140,26 +132,6 @@ impl Object {
 }
 
 impl Human {
-    fn human() -> Human {
-        let mut rng = rand::thread_rng();
-        Human { position: (rand::thread_rng().gen_range(0.0..100.0),
-                           rand::thread_rng().gen_range(0.0..100.0)),
-            velocity: (0.0, 0.0),
-            acceleration: (0.0, 0.0),
-            id: 0,
-            desire: (0.0, 0.0),
-            app: false,
-            discoverable: false,}
-    }
-    fn set_position(x: f64, y: f64) -> Human {
-        Human { position: (x, y),
-            velocity: (0.0, 0.0),
-            acceleration: (0.0, 0.0),
-            id: 0,
-            desire: (0.0, 0.0),
-            app: false,
-            discoverable: false,}
-    }
     fn get_position(&self) -> (f64, f64) {
         self.position
     }
@@ -195,7 +167,11 @@ impl Human {
             self.acceleration.1 +=y/HUMAN_WEIGHT;
         }
     }
-
+    fn localization_distance(&self) -> f64 {
+        let p1 = self.observ.position;
+        let p2 = self.position;
+        ((p1.0-p2.0).powi(2)+(p1.1-p2.1).powi(2)).sqrt()
+    }
     fn fluctuation(&mut self) {
         let mut rng = rand::thread_rng();
         let x = rng.gen_range(-H_RAND_COEFF..H_RAND_COEFF);
@@ -223,32 +199,22 @@ impl Human {
 }
 
 pub fn main() {
-    let humans_num = 103;
-    let humans_app = 20;
-    let obstacles_num = 10;
-    let field_x = 10.0;
-    let field_y = 10.0;
-    let scale = 1.0;
+    let humans_num = 25;
+    let humans_app = 10;
+    let discoverable_range = 1.0;
+    let field_x = 5.0;
+    let field_y = 5.0;
+    let scale = 2.0;
 
     let mut humans = Vec::new();
     let mut obstacles = Vec::new();
-    let mut vec = Vec::new();
-
-    let window = Window::new(WindowSettings {
-        title: "Crowd Simulation".to_string(),
-        max_size: Some((1280, 720)),
-        ..Default::default()
-    })
-        .unwrap();
-    let context = window.gl();
-
 
     /////////////////////////////////////////
     // Human spawn
     /////////////////////////////////////////
     for i in 0..humans_num {
-        let x = rand::thread_rng().gen_range(0.0..field_x);
-        let y = rand::thread_rng().gen_range(0.0..field_y);
+        let x = rand::thread_rng().gen_range(0.25..field_x-0.25);
+        let y = rand::thread_rng().gen_range(0.25..field_y-0.25);
         let app = if i < humans_app { true } else { false };
         humans.push(Human { position: (x,y),
             velocity: (0.0, 0.0),
@@ -256,11 +222,8 @@ pub fn main() {
             id: i,
             desire: (0.0, 0.0),
             app,
-            discoverable: true,});
-        vec.push(Gm::new(
-            Circle::new(&context, vec2((x*CM_TO_M) as f32, (y*CM_TO_M) as f32), 25.0),
-            ColorMaterial { color: Color::BLACK, ..Default::default() }, ));
-
+            discoverable: true,
+            observ: Observation::empty(),});
     }
     /////////////////////////////////////////
     // Object spawn
@@ -277,38 +240,20 @@ pub fn main() {
     lines.extend(line4);
     for point in lines.iter() {
         obstacles.push(Object { position: *point,
-            id: humans_num,
-            color: Color::BLUE,});
-        vec.push(Gm::new(
-            Circle::new(&context, vec2((point.0 * CM_TO_M) as f32, (point.1 * CM_TO_M) as f32), 25.0),
-            ColorMaterial { color: Color::BLUE, ..Default::default() }, ));
+            id: humans_num,});
     }
     /////////////////////////////////////////
     // Atractor's spawn
     /////////////////////////////////////////
-    vec.push(Gm::new(
-        Circle::new(&context, vec2((field_x*CM_TO_M*0.5) as f32, (field_y*CM_TO_M*0.5) as f32), 25.0),
-        ColorMaterial { color: Color::GREEN, ..Default::default() }, ));
     let attractor = (field_x*0.5, field_y*0.5);
 
     let mut time = 0.0;
     let dt = 0.1;
     let mut fluctuation_timer = 0;
     let mut cloud_observations = Vec::new();
-    let discoverable_range = 3.0;
-    let crowd_threshold = 4;
-    let mut estimations = Vec::new();
     let cutoff = 200.0;
-    window.render_loop(move |frame_input: FrameInput| unsafe {
+    loop {
         let now = Instant::now();
-        frame_input
-            .screen()
-            .clear(ClearState::color_and_depth(0.8, 0.8, 0.8, 1.0, 1.0))
-            .render(
-                &camera2d(frame_input.viewport),
-                vec.iter(),
-                &[],
-            );
         for i in 0..humans_num {
             /////////////////////////////////////////
             // Mechanical interactions
@@ -319,8 +264,13 @@ pub fn main() {
                     let other = humans[j].get_position();
                     humans[i].human_to_human(other);
                 }
-                if humans[i].app && humans[i].get_distance(humans[j].get_position()) < discoverable_range && humans[j].discoverable && !humans[j].app {
-                    cloud_observations.push(Observation::new(humans[j].get_position(), discoverable_range, humans[j].id));
+                if humans[i].get_distance(humans[j].get_position()) < discoverable_range && humans[j].discoverable && !humans[j].app {
+                    if humans[i].app {
+                        cloud_observations.push(Observation::new(humans[j].get_position(), discoverable_range, humans[j].id));
+                    } else if humans[i].discoverable && humans[i].observ.is_valid() {
+                        let local = humans[i].observ.clone();
+                        cloud_observations.push(Observation::new(local.position, local.radius+discoverable_range, humans[j].id));
+                    }
                 }
             }
             for j in 0..obstacles.len() {
@@ -336,16 +286,6 @@ pub fn main() {
             if fluctuation_timer > H_RAND_PERIOD {
                 humans[i].fluctuation();
             }
-            vec[humans[i].id].set_center(vec2((humans[i].position.0 * CM_TO_M) as f32,
-                                              (humans[i].position.1 * CM_TO_M) as f32));
-            /////////////////////////////////////////
-            // Data exchange
-            /////////////////////////////////////////
-
-
-            if humans[i].app {
-                cloud_observations.push(Observation::new(humans[i].get_position(), 0.0, humans[i].id));
-            }
         }
         /////////////////////////////////////////
         // People's fluctuations
@@ -357,23 +297,22 @@ pub fn main() {
         /////////////////////////////////////////
         // Cloud computing
         /////////////////////////////////////////
-        let mut cloud_data: Vec<Observation> = (0..humans_num).map(|_| Observation::empty()).collect();
         for i in (0..cloud_observations.len()).rev() {
             if !cloud_observations[i].is_valid() {continue;}
             let id = cloud_observations[i].id;
-            if cloud_data[id].is_valid() {
-                if cloud_data[id].is_exact() {
-                    cloud_observations[i].expired = true;
+            if humans[id].app {
+                cloud_observations[i].expired = true;
+                continue;
+            }
+            if humans[id].observ.is_valid() {
+                let updated = humans[id].observ.overlays(&cloud_observations[i]);
+                if updated.is_valid() {
+                    humans[id].observ = updated.clone();
                 } else {
-                    let updated = cloud_data[id].overlays(&cloud_observations[i]);
-                    if updated.is_valid() {
-                        cloud_data[id] = updated.clone();
-                    } else {
-                        cloud_observations[i].expired = true;
-                    }
+                    cloud_observations[i].expired = true;
                 }
             } else {
-                cloud_data[id] = cloud_observations[i].clone();
+                humans[id].observ = cloud_observations[i].clone();
             }
         }
         for i in (0..cloud_observations.len()).rev() {
@@ -381,50 +320,10 @@ pub fn main() {
                 cloud_observations.remove(i);
             }
         }
-        let dist = distance(humans[humans_num-1].position, cloud_data[humans_num-1].position);
+        let dist = humans[humans_num-1].localization_distance();
         println!("Dist: {}", dist);
-        let mut estimation = (0.0, 0.0);
-        let mut n_samples = 0;
-        for i in 0..humans_num {
-            if !cloud_data[i].is_valid() {continue;}
-            let mut count = 0;
-            for j in 0..humans_num {
-                if !cloud_data[j].is_valid() {continue;}
-                if j==i { continue; }
-                if distance(cloud_data[i].position,cloud_data[j].position) < H_TO_H_THRESHOLD {
-                    count += 1;
-                }
-            }
-            if count > crowd_threshold {
-                vec[i].material.color = Color::RED;
-                estimation.0 += cloud_data[i].position.0;
-                estimation.1 += cloud_data[i].position.1;
-                n_samples += 1;
-            } else {
-                vec[i].material.color = Color::BLACK;
-            }
-        }
-        if n_samples > 0 {
-            estimation.0 /= n_samples as f64;
-            estimation.1 /= n_samples as f64;
-            estimations.push(distance(estimation, attractor));
-        }
-        if time>cutoff {
-            let mut file = File::create("estimations.csv").unwrap();
-            let mut average = 0.0;
-            let mut variation = 0.0;
-            for estimation in estimations.iter() {
-                file.write_all(format!("{}\n", estimation).as_bytes()).unwrap();
-                average += estimation;
-            }
-            average /= estimations.len() as f64;
-            for estimation in estimations.iter() {
-                variation += (estimation - average).powi(2);
-            }
-            variation /= estimations.len() as f64;
-            println!("Average: {} Variation: {} Samples: {}", average, variation, estimations.len());
-            std::process::exit(0);
-        }
+
+        if time>cutoff { std::process::exit(0); }
         /////////////////////////////////////////
         // Performance metrics
         /////////////////////////////////////////
@@ -433,6 +332,5 @@ pub fn main() {
         let sim_fps = 1.0 / dt;
         time += dt;
         println!("FPS: {:.2?} SimTime: {:.2?}", fps, time);
-        FrameOutput::default()
-    });
+    }
 }

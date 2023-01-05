@@ -1,0 +1,5 @@
+[workspace]
+
+members = [
+    "crowd_detection_comp",
+]

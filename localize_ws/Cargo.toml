@@ -1,5 +1,5 @@
 [workspace]
 
 members = [
-    "detect",
+    "localize_fast",
 ]
