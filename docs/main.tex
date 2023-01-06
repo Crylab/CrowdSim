@@ -1,241 +1,143 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%12pt: grandezza carattere
-                                        %a4paper: formato a4
-                                        %openright: apre i capitoli a destra
-                                        %twoside: serve per fare un
-                                        %   documento fronteretro
-                                        %report: stile tesi (oppure book)
-\documentclass[12pt,a4paper,openright,twoside]{report}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%libreria per scrivere in italiano
+\documentclass[12pt,a4paper]{report}
 \usepackage[italian, english]{babel}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%libreria per accettare i caratteri
-                                        %   digitati da tastiera come è à
-                                        %   si può usare anche
-                                        %   \usepackage[T1]{fontenc}
-                                        %   però con questa libreria
-                                        %   il tempo di compilazione
-                                        %   aumenta
-\usepackage[latin1]{inputenc}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%libreria per impostare il documento
-\usepackage{fancyhdr}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%libreria per avere l'indentazione
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   all'inizio dei capitoli, ...
-\usepackage{indentfirst}
-%
-%%%%%%%%%libreria per mostrare le etichette
-%\usepackage{showkeys}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%libreria per inserire grafici
-\usepackage{graphicx}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%libreria per utilizzare font
-                                        %   particolari ad esempio
-                                        %   \textsc{}
 \usepackage{newlfont}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%librerie matematiche
-\usepackage{amssymb}
-\usepackage{amsmath}
-\usepackage{latexsym}
-\usepackage{amsthm}
-%
-\oddsidemargin=30pt \evensidemargin=20pt%impostano i margini
-\hyphenation{sil-la-ba-zio-ne pa-ren-te-si}%serve per la sillabazione: tra parentesi 
-					   %vanno inserite come nell'esempio le parole 
-%					   %che latex non riesce a tagliare nel modo giusto andando a capo.
-
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%comandi per l'impostazione
-                                        %   della pagina, vedi il manuale
-                                        %   della libreria fancyhdr
-                                        %   per ulteriori delucidazioni
-\pagestyle{fancy}\addtolength{\headwidth}{20pt}
-\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
-\renewcommand{\sectionmark}[1]{\markright{\thesection \ #1}{}}
-\rhead[\fancyplain{}{\bfseries\leftmark}]{\fancyplain{}{\bfseries\thepage}}
-\cfoot{}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\linespread{1.3}                        %comando per impostare l'interlinea
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%definisce nuovi comandi
-%
+\usepackage{graphicx}
+\usepackage{textgreek}
+\graphicspath{ {./} }
+\textwidth=450pt\oddsidemargin=0pt
 \begin{document}
-\begin{titlepage}                       %crea un ambiente libero da vincoli
-                                        %   di margini e grandezza caratteri:
-                                        %   si pu\`o modificare quello che si
-                                        %   vuole, tanto fuori da questo
-                                        %   ambiente tutto viene ristabilito
-%
-\thispagestyle{empty}                   %elimina il numero della pagina
-\topmargin=6.5cm                        %imposta il margina superiore a 6.5cm
-\raggedleft                             %incolonna la scrittura a destra
-\large                                  %aumenta la grandezza del carattere
-                                        %   a 14pt
-\em                                     %emfatizza (corsivo) il carattere
-
-\newpage                                %va in una pagina nuova
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\clearpage{\pagestyle{empty}\cleardoublepage}%non numera l'ultima pagina sinistra
+\begin{titlepage}
+\begin{center}
+{{\Large{\textsc{Alma Mater Studiorum $\cdot$ University of
+Bologna}}}} \rule[0.1cm]{15.8cm}{0.1mm}
+\rule[0.5cm]{15.8cm}{0.6mm}
+{\small{\bf DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING\\
+PhD in Computer science and Engineering }}
+\end{center}
+\vspace{15mm}
+\begin{center}
+{\LARGE{\bf REPORT}}\\
+\vspace{3mm}
+{\LARGE{\bf "CROWD SIMULATION"}}\\
+\vspace{3mm}
+\end{center}
+\vspace{40mm}
+\par
+\noindent
+\begin{minipage}[t]{0.47\textwidth}
+{\large{\bf Supervisor:\\
+prof. Danilo Pianini}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.47\textwidth}\raggedleft
+{\large{\bf Student:\\
+Ruslan Shaiakhmetov}}
+\end{minipage}
+\vspace{60mm}
+\begin{center}
+{\large{\bf Bologna \\ 2022 }}%inserire l'anno accademico a cui si è iscritti
+\end{center}
 \end{titlepage}
-\pagenumbering{arabic}                   %serve per mettere i numeri romani
-\chapter*{Relevance}                 %crea l'introduzione (un capitolo
-                                        %   non numerato)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
+\pagenumbering{arabic} 
+\chapter*{Introduction}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%aggiunge la voce Introduzione
-                                        %   nell'indice
-Relevance text
-\chapter*{Aim and objective}
-aim and objective
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-                        %crea l'indice
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
-\rhead[\fancyplain{}{\bfseries\leftmark}]{\fancyplain{}{\bfseries\thepage}}
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
-INDICE}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-\listoffigures                          %crea l'elenco delle figure
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-\listoftables                           %crea l'elenco delle tabelle
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-\chapter{Review}                %crea il capitolo
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries\rightmark}}
-\pagenumbering{arabic}                  %mette i numeri arabi
-Questo \`e il primo capitolo.
-\section{Prima Sezione}                 %crea la sezione
-Questa \`e la prima sezione.
-
-Ora vediamo un elenco numerato:         %crea un elenco numerato
+\chapter*{Crowd model}
+Large crowds of people have a rather primitive behavior in emergency situations. This is due to low awareness of the threat location and evacuation point direction. People in the immediate vicinity of the source of the threat are aware of its location and move away from it, pushing other people. Other people are unaware of the incident and are simply moving in a single stream with other people. These processes form circular wave effects similar to mechanical (acoustic waves). Let us assume that such phenomena can be described by the equations of acoustic waves of a solid body.\\\\
+As an example, consider the case of the Oasis concert in Manchester, England in 2005 (figure 1).  In the video of an eyewitness, distances can be measured by comparing with the size of the head of the crowd participants (the average size of a person's head is 57 cm in girth, which corresponds to 18 cm in diameter). You can see how the wave in the crowd overcame a little more than 16 meters in 5 seconds. Thus, the wave propagation speed is 3.23 meters per second. At the same time, the crowd density is 3.43 people per square meter.\\
+\begin{center}
+    \includegraphics[width=12cm]{img/srowd.png}\\
+    Figure 1 - Oasis concert in Manchester, England in 2005
+\end{center}
+If a mechanical wave propagates in a solid thin rod, the speed of sound is determined by the Newton-Leibniz equation:
+\[ c = \sqrt{\frac{E}{\rho}}\]
+where: c - speed of sound\\
+E - Young modulus\\
+$\rho$ - Material density\\\\
+The average crowd density can be calculated as:
+\[ \rho=\frac{m \cdot d }{h}=\frac{62kg \cdot 3.43 m \textsuperscript{-2}}{1.72 m}=123.64\frac{kg}{m \textsuperscript{3}}\]
+where: m - average human mass\\
+d - planar crowd density (people per square meter)\\
+h - average human height\\\\
+Thus, from the Newton-Leibniz equation:
+\[ E = c\textsuperscript{2} \cdot \rho = 10.43\frac{m\textsuperscript{2}}{s\textsuperscript{2}} \cdot 123.64\frac{kg}{m \textsuperscript{3}} = 1290 \frac{N}{m\textsuperscript{2}}\]\\
+Therefore, it is possible to compute human to human the stiffness coefficient as:
+\[K = \frac{E\cdot S}{L}\]
+where: S - average square of interaction between two humans\\
+L - average distance between two people\\\\
+At the same time, an average square of interaction between two humans can be computed as a multiplication between the average human height and the average distance between two humans. Then stiffness coefficient is equal to:
+\[K = E \cdot h = 1290 \frac{N}{m\textsuperscript{2}} \cdot 1.72 m = 2219\frac{N}{m}\]
+ It is possible to build a mass-spring-dumper chain (figure 2) with obtained elasticity and average human mass, to simulate generalized crowd behavior.
+ \begin{center}
+    \includegraphics[width=12cm]{img/Model.png}\\
+    Figure 2 - Mass-spring-damper chain
+\end{center}
+\[m \ddot x + b \dot x + Kx = 0\]
+where x - vector of humans positions\\
+b - damper factor\\\\
+It is impossible to find the damper factor in the studied video because the crowded area was smaller than the wave-decreasing length. But it is understandable that it is small enough for our study. On the other side, the damping factor is important for system stability. It is necessary to set damping factor based on heuristic considerations such small that the general behavior was the same or changed insignificantly.\\\\
+Let's check the correctness and applicability of assumptions by making a computer model based on obtained parameters and measuring wave velocity.
+Let's make a virtual area 10 by 3 meters (figure 3) to do that. It must contend $3.43\cdot10\cdot3=103$ people. It makes up 3.4 meters per second. It is faster by 5\% than the original one. The deviation is due to measurement error.
+\begin{center}
+    \includegraphics[width=12cm]{img/Wave.png}\\
+    Figure 3 - Crowd model (wavefront in the middle)
+\end{center}
+\chapter*{Crowd control}
+Crowd control consists of several steps: node localization, crowd detection, area exploration, and crowd management. \\\\
+The considered system consists of low-power, cheap, short-range transmitters (that will be called nodes) and coordinators. It is assumed that everybody in the crowd is equipped with transmitters. The police officers are equipped with smartphones (coordinators) that are able to communicate with transmitters and are able to define their position (via GPS). 
+Thus, by communicating one with another, nodes are able to localize their positions with respect to other nodes and coordinators.
+\section*{Node localization}
+Let's make several assumptions for the section:
 \begin{enumerate}
-\item primo oggetto
-\item secondo oggetto
-\item terzo oggetto
-\item quarto oggetto
+    \item All packages reach their destinations (no transmission loss)
+    \item Every device can get a list of available devices in a range
+    \item Coordinators know their positions exactly
+    \item All nodes are able to communicate very fast. Therefore, every node know everything about all nodes in the system immediately.
 \end{enumerate}
-
-\begin{figure}[h]                       %crea l'ambiente figura; [h] sta
-                                        %   per here, cioè la figura va qui
-\begin{center}                          %centra nel mezzo della pagina
-                                        %   la figura
-%\includegraphics[width=5cm]{figura.eps}%inserisce una figura larga 5cm
-                                        %se si vuole usare va scommentata
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%inserisce la legenda ed etichetta
-                                        %   la figura con \label{fig:prima}
-\caption[legenda elenco figure]{legenda sotto la figura}\label{fig:prima}
+The node's position can be founded by overlaying transmitter ranges with the other nodes from the different positions (figure 4). The more devices can detect nodes in their ranges, the more accurate position will be.
+\begin{center}
+    \includegraphics[width=12cm]{img/areas.png}\\
+    Figure 4 - Range's overlays (Blue - ranges, Red - estimation)
 \end{center}
-\end{figure}
-
-\section{Seconda Sezione}
-Ora vediamo un elenco puntato:
-\begin{itemize}                         %crea un elenco puntato
-\item primo oggetto
-\item secondo oggetto
-\end{itemize}
-
-\section{Altra Sezione}
-Vediamo un elenco descrittivo:
-\begin{description}                     %crea un elenco descrittivo
-  \item[OGGETTO1] prima descrizione;
-  \item[OGGETTO2] seconda descrizione;
-  \item[OGGETTO3] terza descrizione.
-\end{description}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%crea una sottosezione
-\subsection{Altra SottoSezione}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%crea una sottosottosezione
-\subsubsection{SottoSottoSezione}Questa sottosottosezione non viene
-numerata, ma \`e solo scritta in grassetto.
-\section{Altra Sezione}                 %crea una sottosezione
-Vediamo la creazione di una tabella; la tabella \ref{tab:uno}
-(richiamo il nome della tabella utilizzando la label che ho messo sotto):
-la facciamo di tre righe e tre colonne, la prima colonna
-``incolonnata'' a destra (r) e le altre centrate (c):\\
-\begin{table}[h]                        %ambiente tabella
-                                        %(serve per avere la legenda)
-\begin{center}                          %centra nella pagina la tabella
-\begin{tabular}{r|c|c}                  %tre colonne con righe verticali
-                                        %   prodotte con |
-\hline \hline                           %inserisce due righe orizzontali
-$(1,1)$ & $(1,2)$ & $(1,3)$\\           %& separa le colonne e con
-\hline                                  %inserisce una riga orizzontale
-$(2,1)$ & $(2,2)$ & $(2,3)$\\           %  \\ va a capo
-\hline                                  %inserisce una riga orizzontale
-$(3,1)$ & $(3,2)$ & $(3,3)$\\
-\hline \hline                           %inserisce due righe orizzontali
-\end{tabular}
-\caption[legenda elenco tabelle]{legenda tabella}\label{tab:uno}
+Every node receives a lot of data from nodes around. All this data is a list of range circles where one node was able to detect the other. Step by step, every node is narrowing the localization circle (figure 5). It is a simple geometrical task - Find the height (h) of the triangle, if all sides are known: radiuses $r1, r2$ and distance between centers $dist$.
+\[ p = \frac{(r1+r2+dist)}{2}\]
+\[ h = \frac{2\cdot\sqrt{p\cdot(p-dist)\cdot(p-r1)\cdot(p-r2)}}{dist})\]
+where: p - half of the triangle's perimeter 
+\begin{center}
+    \includegraphics[width=12cm]{img/Geometry.png}\\
+    Figure 5 - Circle's narrowing
 \end{center}
-\end{table}
-\section{Altra Sezione}\label{sec:prova}%posso mettere le label anche
-                                        %   alle section
-\subsection{Listati dei programmi}
-\subsubsection{Primo Listato}
-\begin{verbatim}
-        In questo ambiente     posso scrivere      come voglio,
-lasciare gli spazi che voglio e non % commentare quando voglio
-e ci sarà scritto tutto.
-Quando lo uso è meglio che disattivi il Wrap del WinEdt
-\end{verbatim}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%per fare le conclusioni
-\chapter*{Conclusioni}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
-\rhead[\fancyplain{}{\bfseries
-CONCLUSIONI}]{\fancyplain{}{\bfseries\thepage}}
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
-CONCLUSIONI}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%aggiunge la voce Conclusioni
-                                        %   nell'indice
-\addcontentsline{toc}{chapter}{Conclusioni} Queste sono le
-conclusioni.\\
-In queste conclusioni voglio fare un riferimento alla
-bibliografia: questo \`e il mio riferimento \cite{K3,K4}.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
-\renewcommand{\chaptermark}[1]{\markright{\thechapter \ #1}{}}
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries\rightmark}}
-\appendix                               %imposta le appendici
-\chapter{Prima Appendice}               %crea l'appendice
-In questa Appendice non si \`e utilizzato il comando:\\
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\verb"" è equivalente all'
-                                        %   ambiente verbatim,
-                                        %   ma si utilizza all'interno
-                                        %   di un discorso.
-\verb"\clearpage{\pagestyle{empty}\cleardoublepage}", ed infatti
-l'ultima pagina 8 ha l'intestazione con il numero di pagina in
-alto.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
-\rhead[\fancyplain{}{\bfseries \thechapter \:Prima Appendice}]
-{\fancyplain{}{\bfseries\thepage}}
-\chapter{Seconda Appendice}             %crea l'appendice
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
-\rhead[\fancyplain{}{\bfseries \thechapter \:Seconda Appendice}]
-{\fancyplain{}{\bfseries\thepage}}
-\begin{thebibliography}{90}             %crea l'ambiente bibliografia
-\rhead[\fancyplain{}{\bfseries \leftmark}]{\fancyplain{}{\bfseries
-\thepage}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%aggiunge la voce Bibliografia
-                                        %   nell'indice
-\addcontentsline{toc}{chapter}{Bibliografia}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%provare anche questo comando:
-%%%%%%%%%%%\addcontentsline{toc}{chapter}{\numberline{}{Bibliografia}}
-\bibitem{K1} Primo oggetto bibliografia.
-\bibitem{K2} Secondo oggetto bibliografia.
-\bibitem{K3} Terzo oggetto bibliografia.
-\bibitem{K4} Quarto oggetto bibliografia.
-\end{thebibliography}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-\chapter*{Ringraziamenti}
-\thispagestyle{empty}
-Qui possiamo ringraziare il mondo intero!!!!!!!!!!\\
-Ovviamente solo se uno vuole, non \`e obbligatorio.
+It is important to notice, that nodes are not able to know their position when they generate a range circle for the other node. Then the circle of the possible node's position sum with a range circle (figure 6).
+\begin{center}
+    \includegraphics[width=6cm]{img/sum.png}\\
+    Figure 6 - Circle sum (blue - position circle, yellow - possible range circles, dashed - resultant)
+\end{center}
+
+A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...\\\\
+And conclusions...
+\section*{Crowd detection}
+To detect crowds several technics might be used:
+\begin{enumerate}
+    \item Based on the number of nodes in transmit range
+    \item Based on the short distance with neighbor's nodes
+    \item Based on intersections of clouds of locations probability
+\end{enumerate}
+To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  
+\section*{Area exploration}
+The crowd uses all available space. Moreover, usually, local authorities prepare additional space for people. All those aspects are hard to take into account before the event. Thus, the system must be adaptive and flexible in terms of available space. \\\\
+By storing its positions and sharing them with the other nodes, it is possible to compute the map of available the area. The map will be adaptive in terms of changing: police barriers, cars, gates, etc.
+
+
+
+
+
+
+
+
+
+
+
+
+\chapter*{Bibliography}
+
+
 \end{document}

@@ -199,12 +199,12 @@ impl Human {
 }
 
 pub fn main() {
-    let humans_num = 25;
+    let humans_num = 200;
     let humans_app = 10;
     let discoverable_range = 1.0;
-    let field_x = 5.0;
-    let field_y = 5.0;
-    let scale = 2.0;
+    let field_x = 10.0;
+    let field_y = 10.0;
+    let scale = 1.0;
 
     let mut humans = Vec::new();
     let mut obstacles = Vec::new();
@@ -226,6 +226,7 @@ pub fn main() {
         let x = rand::thread_rng().gen_range(0.25..field_x-0.25);
         let y = rand::thread_rng().gen_range(0.25..field_y-0.25);
         let app = if i < humans_app { true } else { false };
+        let color = if app {Color::BLACK} else {Color::RED};
         humans.push(Human { position: (x,y),
             velocity: (0.0, 0.0),
             acceleration: (0.0, 0.0),
@@ -236,7 +237,7 @@ pub fn main() {
             observ: Observation::empty(),});
         vec.push(Gm::new(
             Circle::new(&context, vec2((x*CM_TO_M*scale) as f32, (y*CM_TO_M*scale) as f32), 25.0*scale as f32),
-            ColorMaterial { color: Color::BLACK, ..Default::default() }, ));
+            ColorMaterial { color, ..Default::default() }, ));
 
     }
     /////////////////////////////////////////
@@ -270,6 +271,7 @@ pub fn main() {
     let mut time = 0.0;
     let dt = 0.1;
     let mut fluctuation_timer = 0;
+    let mut measures = Vec::new();
     let mut cloud_observations = Vec::new();
     let cutoff = 200.0;
     window.render_loop(move |frame_input: FrameInput| unsafe {
@@ -327,6 +329,11 @@ pub fn main() {
         /////////////////////////////////////////
         // Cloud computing
         /////////////////////////////////////////
+        for i in 0..humans_num {
+            if !humans[i].app {
+                humans[i].observ = Observation::empty();
+            }
+        }
         for i in (0..cloud_observations.len()).rev() {
             if !cloud_observations[i].is_valid() {continue;}
             let id = cloud_observations[i].id;
@@ -350,27 +357,28 @@ pub fn main() {
                 cloud_observations.remove(i);
             }
         }
-        let dist = humans[humans_num-1].localization_distance();
-        println!("Dist: {}", dist);
+        for i in humans_app..humans_num {
+            let dist = humans[i].localization_distance();
+            measures.push(dist);
+        }
 
-/*
+
         if time>cutoff {
             let mut file = File::create("estimations.csv").unwrap();
             let mut average = 0.0;
             let mut variation = 0.0;
-            for estimation in estimations.iter() {
+            for estimation in measures.iter() {
                 file.write_all(format!("{}\n", estimation).as_bytes()).unwrap();
                 average += estimation;
             }
-            average /= estimations.len() as f64;
-            for estimation in estimations.iter() {
+            average /= measures.len() as f64;
+            for estimation in measures.iter() {
                 variation += (estimation - average).powi(2);
             }
-            variation /= estimations.len() as f64;
-            println!("Average: {} Variation: {} Samples: {}", average, variation, estimations.len());
-            println!("Errors: {}", errors);
+            variation /= measures.len() as f64;
+            println!("Average: {} Variation: {} Samples: {}", average, variation, measures.len());
             std::process::exit(0);
-        }*/
+        }
         /////////////////////////////////////////
         // Performance metrics
         /////////////////////////////////////////
