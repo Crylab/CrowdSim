@@ -35,7 +35,7 @@ Ruslan Shaiakhmetov}}
 \end{minipage}
 \vspace{60mm}
 \begin{center}
-{\large{\bf Bologna \\ 2022 }}%inserire l'anno accademico a cui si è iscritti
+{\large{\bf Bologna \\ 2023 }}%inserire l'anno accademico a cui si è iscritti
 \end{center}
 \end{titlepage}
 \pagenumbering{arabic} 
@@ -111,22 +111,43 @@ It is important to notice, that nodes are not able to know their position when t
     \includegraphics[width=6cm]{img/sum.png}\\
     Figure 6 - Circle sum (blue - position circle, yellow - possible range circles, dashed - resultant)
 \end{center}
-
-A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...A lot of plots...\\\\
-And conclusions...
+Let's simulate random fluctuations of the crowd and compare position estimation with the real position of every person in the crowd. In figure 7, it is possible to see a family of curves that represent average localization errors with respect to a percentage share of coordinators in the crowd and transmission range.
+\begin{center}
+    \includegraphics[width=12cm]{img/Average.png}\\
+    Figure 7 - Localization errors w.r.t. share of coordinators
+\end{center}
+As can be seen from the figure, the localization errors increase monotonically with decreasing share of the coordinator. It causes because the closer coordinator is to the node (statistically), the more accurate node localization will be. Coordinators are able to get their own positions exactly. They play the role of a lighthouse with respect to nodes performing localization. The farther coordinator from the node, the more hops are required to perform localization. The more hops the more localization error. \\\\
+As the transmission range increases, the localization error decreases. Because of the longer transmission range, fewer hops are required. But it's valid for small coordinator's shares, only (up to 15-20\%). For a higher coordinator's share, the more transmission range, the more observations from the nodes. The more observations, the more data. The more data, the less entropy. The less entropy, the less localization error.\\\\
+Similar situation with a variance of the localization error. In figure 8 it is possible to see a family of curves that represent variance with respect to the coordinator's share and transmission range. 
+\begin{center}
+    \includegraphics[width=12cm]{img/Variation.png}\\
+    Figure 8 - Variation of errors w.r.t. share of coordinators
+\end{center}
+The shorter the transmission range, the higher variance of localization errors for a small coordinator's share in the crowd.\\\\
+In figure 9 it is possible to see the average localization error and variance of it with respect to crowd density (people per squared meter) and coordinator's share. 
+\begin{center}
+    \includegraphics[width=12cm]{img/Average_sq.png}\\
+    \includegraphics[width=12cm]{img/Variation_sq.png}\\
+    Figure 9 - Localization errors and variation w.r.t. crowd density
+\end{center}
+It is natural, the higher the density of the crowd, the fewer localization errors. The higher the crowd density, the closer nodes one to another, statistically. Therefore, more data, less entropy, and less localization error.
 \section*{Crowd detection}
 To detect crowds several technics might be used:
 \begin{enumerate}
-    \item Based on the number of nodes in transmit range
+    \item Based on the number of nodes in transmit range (it's the simplest one)
     \item Based on the short distance with neighbor's nodes
-    \item Based on intersections of clouds of locations probability
+    \item Based on intersections of clouds of locations probability (it's the most promising)
 \end{enumerate}
+Comparing false positive crowd areas ($\alpha-error$) for all methods.\\
+Comparing false negative crowd areas ($\beta-errors$) for all methods.\\
 To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  
 \section*{Area exploration}
 The crowd uses all available space. Moreover, usually, local authorities prepare additional space for people. All those aspects are hard to take into account before the event. Thus, the system must be adaptive and flexible in terms of available space. \\\\
-By storing its positions and sharing them with the other nodes, it is possible to compute the map of available the area. The map will be adaptive in terms of changing: police barriers, cars, gates, etc.
+By storing its positions and sharing them with the other nodes, it is possible to compute the map of available the area. The map will be adaptive in terms of changing: police barriers, cars, gates, etc.\\\\
+To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  
 
-
+\section*{Crowd management}
+To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  To be continued...  
 
 
 

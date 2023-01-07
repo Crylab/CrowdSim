@@ -199,9 +199,9 @@ impl Human {
 }
 
 pub fn main() {
-    let humans_num = 100;
-    let humans_app = 10;
-    let discoverable_range = 1.5;
+    let humans_num = 50;
+    let humans_app = (humans_num as f32 * 0.15) as usize;
+    let discoverable_range = 1.0;
     let field_x = 10.0;
     let field_y = 10.0;
     let scale = 1.0;
