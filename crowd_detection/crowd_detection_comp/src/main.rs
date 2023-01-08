@@ -206,8 +206,8 @@ pub fn main() {
     // Human spawn
     /////////////////////////////////////////
     for i in 0..humans_num {
-        let x = rand::thread_rng().gen_range(0.0..field_x);
-        let y = rand::thread_rng().gen_range(0.0..field_y);
+        let x = rand::thread_rng().gen_range(0.25..field_x-0.25);
+        let y = rand::thread_rng().gen_range(0.25..field_y-0.25);
         let app = if i < humans_app { true } else { false };
         humans.push(Human { position: (x,y),
             velocity: (0.0, 0.0),
@@ -254,10 +254,6 @@ pub fn main() {
     let mut time = 0.0;
     let dt = 0.1;
     let mut fluctuation_timer = 0;
-    let mut estimations = Vec::new();
-    let mut alpha_errors = 0;
-    let mut beta_errors = 0;
-    let mut base_errors = 0;
     let cutoff = 200.0;
     window.render_loop(move |frame_input: FrameInput| unsafe {
         let now = Instant::now();
@@ -269,49 +265,29 @@ pub fn main() {
                 vec.iter(),
                 &[],
             );
-        let mut estimation = (0.0, 0.0);
-        let mut n_samples = 0;
         for i in 0..humans_num {
             /////////////////////////////////////////
             // Mechanical interactions
             /////////////////////////////////////////
-            let mut neighbors = 0;
-            let mut real_neighbors = 0;
+            let mut counter = 0;
             for j in 0..humans_num {
                 if j == i { continue; }
                 if humans[j].get_distance(humans[i].get_position()) < H_TO_H_THRESHOLD {
                     let other = humans[j].get_position();
                     humans[i].human_to_human(other);
-                    real_neighbors += 1;
-                    if !humans[j].app {
-                        neighbors += 1;
-                    }
+                    counter += 1;
                 }
             }
-            if humans[i].app {
-                if neighbors > NEIGHBORHOOD_THRESHOLD {
-                    estimation.0 += humans[i].get_position().0;
-                    estimation.1 += humans[i].get_position().1;
-                    n_samples += 1;
-                }
-                if neighbors > NEIGHBORHOOD_THRESHOLD {
-                    vec[i].material.color = if humans[i].set_crowded() { Color::RED } else { Color::BLACK }
-                } else {
-                    vec[i].material.color = if humans[i].reset_crowded() { Color::BLACK } else { Color::RED }
-                }
-                if vec[i].material.color == Color::RED && real_neighbors < ETALON_THRESHOLD {
-                    alpha_errors += 1;
-                }
-                if vec[i].material.color == Color::BLACK && real_neighbors > ETALON_THRESHOLD {
-                    beta_errors += 1;
-                }
-                base_errors += 1;
+            if counter>4 {
+                vec[i].material.color = Color::RED;
+            }
+            else {
+                vec[i].material.color = Color::BLACK;
             }
             for j in 0..obstacles.len() {
                 if humans[i].get_distance(obstacles[j].get_position()) < H_TO_O_THRESHOLD {
                     humans[i].human_to_object(obstacles[j].get_position());
                 }
-                humans[i].human_to_object(obstacles[j].get_position());
             }
             if humans[i].get_distance(attractor) < H_TO_A_THRESHOLD {
                 humans[i].human_to_attraction(attractor);
@@ -323,11 +299,6 @@ pub fn main() {
             vec[humans[i].id].set_center(vec2((humans[i].position.0 * CM_TO_M) as f32,
                                               (humans[i].position.1 * CM_TO_M) as f32));
         }
-        if n_samples > 0 {
-            estimation.0 /= n_samples as f64;
-            estimation.1 /= n_samples as f64;
-            estimations.push(distance(estimation, attractor));
-        }
         /////////////////////////////////////////
         // People's fluctuations
         /////////////////////////////////////////
@@ -338,23 +309,23 @@ pub fn main() {
         /////////////////////////////////////////
         // End of the simulation
         /////////////////////////////////////////
-        if time>cutoff {
-            let mut file = File::create("estimations.csv").unwrap();
-            let mut average = 0.0;
-            let mut variation = 0.0;
-            for estimation in estimations.iter() {
-                file.write_all(format!("{}\n", estimation).as_bytes()).unwrap();
-                average += estimation;
-            }
-            average /= estimations.len() as f64;
-            for estimation in estimations.iter() {
-                variation += (estimation - average).powi(2);
-            }
-            variation /= estimations.len() as f64;
-            println!("Average: {} Variation: {} Samples: {}", average, variation, estimations.len());
-            println!("Alpha: {} Beta: {} Base: {}", alpha_errors, beta_errors, base_errors);
-            std::process::exit(0);
-        }
+        //if time>cutoff {
+        //    let mut file = File::create("estimations.csv").unwrap();
+        //    let mut average = 0.0;
+        //    let mut variation = 0.0;
+        //    for estimation in estimations.iter() {
+        //        file.write_all(format!("{}\n", estimation).as_bytes()).unwrap();
+        //        average += estimation;
+        //    }
+        //    average /= estimations.len() as f64;
+        //    for estimation in estimations.iter() {
+        //        variation += (estimation - average).powi(2);
+        //    }
+        //    variation /= estimations.len() as f64;
+        //    println!("Average: {} Variation: {} Samples: {}", average, variation, estimations.len());
+        //    println!("Alpha: {} Beta: {} Base: {}", alpha_errors, beta_errors, base_errors);
+        //    std::process::exit(0);
+        //}
         /////////////////////////////////////////
         // Performance metrics
         /////////////////////////////////////////
@@ -362,7 +333,7 @@ pub fn main() {
         let fps = 1.0 / elapsed.as_secs_f64();
         let sim_fps = 1.0 / dt;
         time += dt;
-        //println!("FPS: {:.2?} SimTime: {:.2?}", fps, time);
+        println!("FPS: {:.2?} SimTime: {:.2?}", fps, time);
         FrameOutput::default()
     });
 }

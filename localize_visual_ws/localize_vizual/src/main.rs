@@ -307,7 +307,6 @@ pub fn main() {
                 if humans[i].get_distance(obstacles[j].get_position()) < H_TO_O_THRESHOLD {
                     humans[i].human_to_object(obstacles[j].get_position());
                 }
-                humans[i].human_to_object(obstacles[j].get_position());
             }
             if humans[i].get_distance(attractor) < H_TO_A_THRESHOLD {
                 humans[i].human_to_attraction(attractor);
